@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StyleDubber++: Learning Movie Dubbing via Progressive Style-Guided Flow Matching</title>
+    <style>
+
+        :root {
+            --brand-dark: #001529;      
+            --brand-primary: #003a70; 
+            --brand-accent: #00a8ff;    
+            --brand-glow: rgba(0, 168, 255, 0.4);
+            
+            --bg-color: #f4f7f9;
+            --surface-color: #ffffff;
+            
+            --font-main: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg-color);
+            font-family: var(--font-main);
+            color: #333;
+            overflow-x: hidden;
+        }
+
+        header {
+            position: relative;
+            background: linear-gradient(135deg, var(--brand-dark) 0%, var(--brand-primary) 100%);
+            color: white;
+            padding: 60px 20px 100px; 
+            text-align: center;
+            overflow: hidden;
+        }
+
+        header::before {
+            content: '';
+            position: absolute;
+            top: -50%; left: -50%;
+            width: 200%; height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.05) 0%, transparent 60%);
+            animation: rotateBg 20s linear infinite;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        @keyframes rotateBg { 
+            0% { transform: rotate(0deg); } 
+            100% { transform: rotate(360deg); } 
+        }
+
+        .header-content {
+            position: relative;
+            z-index: 2;
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        .logo-badge {
+            display: inline-flex;
+            align-items: center;
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            margin-bottom: 20px;
+            backdrop-filter: blur(5px);
+        }
+
+        h1.project-title {
+            font-size: 2.6rem; 
+            font-weight: 800;
+            letter-spacing: -0.5px;
+            margin: 0 0 10px 0;
+            
+            background: linear-gradient(
+                to right, 
+                #ffffff 0%, 
+                #bce6ff 20%, 
+                #ffffff 40%, 
+                #ffffff 100%
+            );
+            background-size: 200% auto;
+            color: #fff;
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            
+            animation: shineText 3s linear infinite;
+        }
+
+        @keyframes shineText {
+            to { background-position: 200% center; }
+        }
+
+        .authors {
+            font-size: 1rem;
+            color: rgba(255,255,255,0.8);
+            margin-top: 15px;
+            font-weight: 300;
+        }
+
+        .teaser-container {
+            max-width: 900px; 
+            margin: -70px auto 60px; 
+            position: relative;
+            z-index: 10;
+            
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(15px);
+            padding: 10px;
+            border-radius: 12px;
+            box-shadow: 0 20px 50px rgba(0, 21, 41, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.6);
+        }
+        
+        .abstract-text {
+            padding: 15px 20px;
+            font-size: 0.9rem;
+            color: #555;
+            line-height: 1.5;
+            text-align: justify;
+        }
+
+        .section-container {
+            max-width: 1440px;
+            margin: 0 auto 80px;
+            padding: 0 20px;
+        }
+
+        .section-head {
+            display: flex;
+            align-items: baseline;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #e1e4e8;
+            padding-bottom: 10px;
+        }
+
+        .section-head h2 {
+            font-size: 1.6rem;
+            color: var(--brand-primary);
+            margin: 0 15px 0 0;
+        }
+
+        .section-head span {
+            font-size: 0.9rem;
+            color: #888;
+            font-weight: 400;
+        }
+
+        .table-responsive {
+            width: 100%;
+            overflow-x: auto;
+            background: #fff;
+            border-radius: 12px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.04);
+            border: 1px solid #eee;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 1200px; 
+            table-layout: fixed; 
+        }
+
+        thead th {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: #fff;
+            color: #444;
+            font-weight: 700;
+            font-size: 0.9rem; 
+            padding: 15px 8px;
+            border-bottom: 2px solid var(--brand-primary);
+            text-align: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.02);
+        }
+
+        th.ours-head {
+            color: var(--brand-primary);
+            background-color: #f0f7ff;
+            border-bottom: 2px solid var(--brand-accent);
+            position: relative;
+        }
+        
+        tbody tr {
+            border-bottom: 1px solid #f0f0f0;
+        }
+        
+        tbody tr:last-child { border-bottom: none; }
+
+        td {
+            padding: 12px 8px; 
+            vertical-align: middle;
+            text-align: center;
+            background: #fff;
+        }
+
+        td.ours-cell {
+            background-color: #f8fbff;
+            border-left: 1px dashed #dceeff;
+            border-right: 1px dashed #dceeff;
+        }
+
+        td.dataset-header {
+            background-color: #eef2f5;
+            color: var(--brand-primary);
+            font-weight: bold;
+            font-size: 1rem;
+            text-align: left;
+            padding: 10px 20px;
+            border-top: 2px solid #dde4eb;
+            border-bottom: 1px solid #dde4eb;
+        }
+
+        /* --- 子表头的样式 --- */
+        tr.sub-header-row th {
+            background: #fafafa;
+            color: #666;
+            font-weight: 600;
+            font-size: 0.8rem;
+            padding: 10px 4px;
+            border-bottom: 2px solid #eaeaea;
+            text-align: center;
+        }
+        
+        tr.sub-header-row th.ours-head-sub {
+            color: var(--brand-primary);
+            background-color: #f0f7ff;
+            border-bottom: 2px solid var(--brand-accent);
+        }
+        /* ----------------------- */
+
+        .video-box {
+            width: 100%;
+            border-radius: 6px;
+            overflow: hidden;
+            background: #000;
+            position: relative;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            transition: all 0.2s ease;
+            aspect-ratio: 1/1;
+        }
+
+        .video-box:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 58, 112, 0.2);
+        }
+
+        video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+
+        footer {
+            text-align: center;
+            padding: 40px;
+            color: #999;
+            font-size: 0.85rem;
+            background: #fff;
+            border-top: 1px solid #eee;
+        }
+
+        td.meta-cell {
+            text-align: left; 
+            padding: 10px 15px;
+            vertical-align: top; 
+        }
+
+        .id-badge {
+            display: inline-block;
+            background-color: var(--brand-primary);
+            color: #fff;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: bold;
+            margin-bottom: 6px;
+        }
+
+        .transcript-text {
+            font-size: 0.85rem;
+            color: #444;
+            font-family: "Georgia", "Times New Roman", serif;
+            font-style: italic;
+            line-height: 1.4;
+            display: block;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="header-content">
+            <div class="logo-badge">
+                <span style="font-size:1.2em; margin-right:5px;">🎬</span> 
+                <strong>StyleDubber++</strong>
+            </div>
+
+            <h1 class="project-title">StyleDubber++: Learning Movie Dubbing via Progressive Style-Guided Flow Matching</h1>
+            
+            <div class="authors">
+                
+            </div>
+        </div>
+    </header>
+
+    <div class="teaser-container">
+        <div class="abstract-text">
+            <strong>Abstract:</strong> Given a piece of text, a video clip, and reference audio, movie dubbing (also known as Visual Voice Cloning, V2C) aims to generate speech that clones the reference audio while aligning with the video in both emotion and lip movement. Existing methods mainly focus on predicting prosody by fusing face expression features with textual phonemes, and aligning lip-sync via a duration predictor and an external forced aligner. Although significant progress has been made, these approaches suffer from low consistency with target emotion, poor lip-sync accuracy, and the inability to adapt to real-world dubbing scenarios. To address these issues, we propose StyleDubber++, a flow-matching-based framework that advances our prior work across three aspects. First, we introduce a semantic-level emotion adaptor to capture emotion context by mapping multimodal cues into an autoregressive language model for semantic reasoning. Second, we design a progressive style-guided flow matching approach to guide the optimal transport flow trajectory from noise to the target mel-spectrogram by modeling hierarchical conditions spanning basic pronunciation, emotion context, and fine-grained acoustic details. Third, we design a sync-aware vector field estimator with an implicit alignment regularizer that achieves self-supervised audio-visual synchronization and linguistic constraint in latent space to improve lip-sync accuracy. Extensive experimental results on six benchmark datasets demonstrate the state-of-the-art performance of the proposed method. The source code and trained models will be made available to the public.
+        </div>
+    </div>
+
+    <div class="section-container">
+        <div class="section-head">
+            <h2>Method Comparison</h2>
+            <span>Comprehensive evaluation on six dubbing benchmarks. All experimental results use the official code or providing checkpoint.</span>
+            <br><br>
+            <strong><span style="color:rgb(139, 0, 0);">
+                (Tip: Please listen for the differences across these dubbing methods, specifically in the segments highlighted in dark red.)
+            </span></strong>
+        </div>
+
+        <div class="table-responsive">
+            <table>
+                <colgroup>
+                    <col style="width: 15%; min-width: 160px;"> <col style="width: 12.1%;"> <col style="width: 12.1%;"> <col style="width: 12.1%;"> <col style="width: 12.1%;"> <col style="width: 12.1%;"> <col style="width: 12.1%;"> <col style="width: 12.1%;"> </colgroup>
+                <thead>
+                    <tr>
+                        <th>Sample / Transcript</th> 
+                        <th>Ground Truth</th>
+                        <th class="ours-head">StyleDubber++ (Ours)</th>
+                        <th>InstructDub (AAAI'26)</th>
+                        <th>AlignDiT (MM'25)</th>
+                        <th>ProDubber (CVPR'25)</th>
+                        <th>EmoDubber (CVPR'25)</th>
+                        <th>StyleDubber (ACL'24)</th>
+                    </tr>
+                </thead>
+                <tbody id="comparison-tbody">
+    
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <footer>
+        Copyright &copy; 2026 StyleDubber++ Project. <br>
+        Designed for StyleDubber++.
+    </footer>
+
+    <script>
+         // 按照你的要求重新排序的数据数组
+         const transcripts1 = [
+            // CelebVDub
+            `and while it is easy to chalk up Shaggy's appetite to him being a stoner, <strong><span style="color:rgb(139, 0, 0);"> ha ha, </span></strong> there was actually a canon albeit (CelebVDub--4GNkXEUOwY-010)`,
+            `here in Thailand you believe that what one friend does, the other one knows <strong><span style="color:rgb(139, 0, 0);">about</span></strong> (CelebVDub--3KCgSpt3hU-0-0)`,
+            // V2COOD.  
+            `no, no, no, no, <strong><span style="color:rgb(139, 0, 0);"> no! no, that </span></strong> one didn't count! (V2COOD-TinkerII@TinkerBell-00-0628-00-001)`,
+            `it's so <strong><span style="color:rgb(139, 0, 0);"> beautiful. </span></strong> what kind of butterfly is (V2COOD-TinkerIII@LizzyGriffiths-00-0095-00-001)`,
+            // MovieOOD  <strong><span style="color:rgb(139, 0, 0);"> we can do  </span></strong>
+            `You may now view what's happening at the same time as things are <strong><span style="color:rgb(139, 0, 0);"> happening </span></strong> to (MovieOOD-YxG4ThEMNS8-001-002)`,
+            `about. <strong><span style="color:rgb(139, 0, 0);"> But what I do know </span></strong> is that I did try to save (MovieOOD-eGIOTw-ADUU-001-016)`,
+            `we have to figure out a way how to squeeze a lifetime into the time we have left, and <strong><span style="color:rgb(139, 0, 0);"> we can do  </span></strong> (MovieOOD-b-yEQA5zGak-001-006)`,
+            // Chem <strong><span style="color:rgb(139, 0, 0);"> Electromagnetic radiation </span></strong>
+            `Well <strong><span style="color:rgb(139, 0, 0);"> let's just calculate </span></strong> from the ideal gas law. (Chem-7W0cz0oGHGE-039)`,
+            `<strong><span style="color:rgb(139, 0, 0);"> Electromagnetic radiation </span></strong> is composed of wavelengths from very, very long to very, very short. (Chem-AGZZGR5Otxw-000)`,
+            // LRS3 <strong><span style="color:rgb(139, 0, 0);"> together </span></strong>
+            `<strong><span style="color:rgb(139, 0, 0);"> but </span></strong> you know what (LRS3-O0JDDyqtSVY-00001)`,
+            `i said we work <strong><span style="color:rgb(139, 0, 0);"> together </span></strong> (LRS3-uL5XUwfkxZw-00013)`,
+            // GRID <strong><span style="color:rgb(139, 0, 0);"> z eight </span></strong>
+            `<strong><span style="color:rgb(139, 0, 0);"> bin blue  </span></strong> at c eight soon (GRID-s26-bbac8s)`,
+            `set green at <strong><span style="color:rgb(139, 0, 0);"> z eight </span></strong> again (GRID-s34-sgaz8a)`
+        ];
+        
+        // 更新的组起始索引映射
+        const datasetGroups = [
+            { index: 0, name: "▶ Dataset: CelebV-Dub" },     // items 0, 1
+            { index: 2, name: "▶ Dataset: V2C-MovieAnimation (Zero-shot)" },        // items 2, 3
+            { index: 4, name: "▶ Dataset: CinePile-Dub (Zero-shot)" },      // items 4, 5, 6
+            { index: 7, name: "▶ Dataset: Chem" },          // items 7, 8
+            { index: 9, name: "▶ Dataset: LRS3-Cross" },          // items 9, 10
+            { index: 11, name: "▶ Dataset: GRID" }          // items 11, 12
+        ];
+
+        function createVideoCell(src, isOurs = false) {
+            const cellClass = isOurs ? 'ours-cell' : '';
+            return `
+                <td class="${cellClass}">
+                    <div class="video-box">
+                        <video controls >
+                            <source src="${src}" type="video/mp4">
+                        </video>
+                    </div>
+                </td>
+            `;
+        }
+        
+        const compTbody = document.getElementById('comparison-tbody');
+        
+        for (let i = 0; i < transcripts1.length; i++) {
+            const groupMatch = datasetGroups.find(g => g.index === i);
+            if (groupMatch) {
+                // 1. 插入数据集标题行
+                const headerTr = document.createElement('tr');
+                headerTr.innerHTML = `
+                    <td colspan="8" class="dataset-header">
+                        ${groupMatch.name}
+                    </td>
+                `;
+                compTbody.appendChild(headerTr);
+
+                // 2. 插入子表头（除了第一个数据集，因为顶部已经有主表头了）
+                if (i > 0) {
+                    const subHeaderTr = document.createElement('tr');
+                    subHeaderTr.className = 'sub-header-row';
+                    subHeaderTr.innerHTML = `
+                        <th>Sample / Transcript</th> 
+                        <th>Ground Truth</th>
+                        <th class="ours-head-sub">StyleDubber++ (Ours)</th>
+                        <th>InstructDub (AAAI'26)</th>
+                        <th>AlignDiT (MM'25)</th>
+                        <th>ProDubber (CVPR'25)</th>
+                        <th>EmoDubber (CVPR'25)</th>
+                        <th>StyleDubber (ACL'24)</th>
+                    `;
+                    compTbody.appendChild(subHeaderTr);
+                }
+            }
+
+            const text = transcripts1[i] || "Transcript not available.";
+            const sampleIndex = i + 1; // 现在的 #1, #2 就会跟着新顺序从上往下走
+            const sampleIdMatch = text.match(/\(([^()]+)\)\s*$/);
+            const sampleId = sampleIdMatch ? sampleIdMatch[1] : String(sampleIndex);
+            
+            const tr = document.createElement('tr');
+
+            tr.innerHTML += `
+                <td class="meta-cell">
+                    <span class="id-badge">#${sampleIndex}</span>
+                    <span class="transcript-text">"${text}"</span>
+                </td>
+            `;
+ 
+            tr.innerHTML += createVideoCell(`./data/video/${sampleId}.mp4`);
+            tr.innerHTML += createVideoCell(`./data/video/Our_${sampleId}.mp4`, true);
+            tr.innerHTML += createVideoCell(`./data/video/InstructDub_${sampleId}.mp4`);
+            tr.innerHTML += createVideoCell(`./data/video/AlignDiT_${sampleId}.mp4`);
+            tr.innerHTML += createVideoCell(`./data/video/ProDubber_${sampleId}.mp4`);
+            tr.innerHTML += createVideoCell(`./data/video/StyleDubber_${sampleId}.mp4`);
+            tr.innerHTML += createVideoCell(`./data/video/EmoDubber_${sampleId}.mp4`);
+            
+            compTbody.appendChild(tr);
+        }
+    </script>
+
+</body>
+</html>
